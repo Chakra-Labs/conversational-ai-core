@@ -1,0 +1,354 @@
+CREATE SCHEMA "public";
+CREATE TABLE "agent_defaults" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"default_agent_name" text DEFAULT 'Chakra-Alpha-7' NOT NULL,
+	"default_primary_language" text DEFAULT 'en' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "agent_identity" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL CONSTRAINT "agent_identity_business_profile_id_key" UNIQUE,
+	"agent_name" text DEFAULT 'Chakra-Alpha-7' NOT NULL,
+	"primary_language" text DEFAULT 'en' NOT NULL,
+	"persona_description" text,
+	"system_prompt" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "agent_runtime_settings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL CONSTRAINT "agent_runtime_settings_business_profile_id_key" UNIQUE,
+	"system_prompt" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "auth_tokens" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"user_id" uuid NOT NULL,
+	"access_token" text NOT NULL CONSTRAINT "auth_tokens_access_token_key" UNIQUE,
+	"refresh_token" text NOT NULL CONSTRAINT "auth_tokens_refresh_token_key" UNIQUE,
+	"expires_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"revoked" boolean DEFAULT false NOT NULL,
+	"revoked_at" timestamp with time zone
+);
+CREATE TABLE "brand_voices" (
+	"id" text PRIMARY KEY,
+	"label" text NOT NULL CONSTRAINT "brand_voices_label_key" UNIQUE,
+	"description" text,
+	"characteristics" text[],
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "business_profiles" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"user_id" uuid NOT NULL,
+	"business_name" text NOT NULL,
+	"industry" text,
+	"business_size" text,
+	"use_case" text,
+	"description" text,
+	"website" text,
+	"industry_vertical" text,
+	"primary_use_case" text,
+	"target_audience" text[] DEFAULT ARRAY[],
+	"brand_voice" jsonb,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "chat_messages" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"session_id" uuid NOT NULL,
+	"role" text NOT NULL,
+	"message_type" text DEFAULT 'chat_message' NOT NULL,
+	"text" text NOT NULL,
+	"confidence" numeric(3, 2),
+	"suggested_next_questions" text[],
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "chat_messages_confidence_check" CHECK (((confidence >= (0)::numeric) AND (confidence <= (1)::numeric))),
+	CONSTRAINT "chat_messages_message_type_check" CHECK ((message_type = ANY (ARRAY['chat_message'::text, 'user_message'::text, 'bot_message'::text]))),
+	CONSTRAINT "chat_messages_role_check" CHECK ((role = ANY (ARRAY['user'::text, 'bot'::text])))
+);
+CREATE TABLE "chat_sessions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL,
+	"session_type" text DEFAULT 'demo' NOT NULL,
+	"conversation_context" text,
+	"device_id" text,
+	"started_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"expired_at" timestamp with time zone,
+	"ended_at" timestamp with time zone,
+	"status" text DEFAULT 'active' NOT NULL,
+	"feedback_score" integer,
+	"feedback_comment" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "chat_sessions_feedback_score_check" CHECK (((feedback_score >= 1) AND (feedback_score <= 5))),
+	CONSTRAINT "chat_sessions_session_type_check" CHECK ((session_type = ANY (ARRAY['demo'::text, 'interactive'::text, 'full'::text]))),
+	CONSTRAINT "chat_sessions_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'ended'::text, 'expired'::text])))
+);
+CREATE TABLE "contact_messages" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"name" text NOT NULL,
+	"email" text NOT NULL,
+	"business_name" text NOT NULL,
+	"industry" text NOT NULL,
+	"message" text NOT NULL,
+	"phone_number" text,
+	"website" text,
+	"status" text DEFAULT 'new' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "contact_messages_status_check" CHECK ((status = ANY (ARRAY['new'::text, 'read'::text, 'responded'::text])))
+);
+CREATE TABLE "customize_options" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL CONSTRAINT "customize_options_business_profile_id_key" UNIQUE,
+	"chatbot_name" text,
+	"tone" text,
+	"welcome_message" text,
+	"support_topics" text[] DEFAULT ARRAY[],
+	"integrations" text[] DEFAULT ARRAY[],
+	"custom_instructions" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "guardrails_defaults" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"default_moderation_enabled" boolean DEFAULT true NOT NULL,
+	"default_global_restrictions" text[] DEFAULT ARRAY[],
+	"default_blocked_topics" text[] DEFAULT ARRAY[],
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "guardrails_settings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL CONSTRAINT "guardrails_settings_business_profile_id_key" UNIQUE,
+	"instructions" text,
+	"global_restrictions" text[],
+	"blocked_topics" text[] DEFAULT ARRAY[],
+	"moderation_enabled" boolean DEFAULT true,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "industries" (
+	"id" text PRIMARY KEY,
+	"label" text NOT NULL CONSTRAINT "industries_label_key" UNIQUE,
+	"description" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "knowledge_upload_files" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"knowledge_upload_id" uuid NOT NULL,
+	"file_name" text NOT NULL,
+	"file_path" text,
+	"file_size" integer,
+	"status" text DEFAULT 'processing' NOT NULL,
+	"chunks" integer DEFAULT 0 NOT NULL,
+	"estimated_tokens" integer DEFAULT 0 NOT NULL,
+	"error_message" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "knowledge_upload_files_status_check" CHECK ((status = ANY (ARRAY['processing'::text, 'processed'::text, 'failed'::text])))
+);
+CREATE TABLE "knowledge_uploads" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL,
+	"upload_id" text NOT NULL CONSTRAINT "knowledge_uploads_upload_id_key" UNIQUE,
+	"status" text DEFAULT 'processing' NOT NULL,
+	"files_processed" integer DEFAULT 0 NOT NULL,
+	"files_successful" integer DEFAULT 0 NOT NULL,
+	"files_error" integer DEFAULT 0 NOT NULL,
+	"total_tokens" integer DEFAULT 0 NOT NULL,
+	"error_message" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "knowledge_uploads_status_check" CHECK ((status = ANY (ARRAY['processing'::text, 'processed'::text, 'failed'::text])))
+);
+CREATE TABLE "onboarding_answers" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"onboarding_session_id" uuid NOT NULL UNIQUE,
+	"question_id" text NOT NULL UNIQUE,
+	"answer" text NOT NULL,
+	"answer_type" text DEFAULT 'text' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "onboarding_answers_onboarding_session_id_question_id_key" UNIQUE("onboarding_session_id","question_id")
+);
+CREATE TABLE "onboarding_options" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"question_id" text NOT NULL UNIQUE,
+	"option_value" text NOT NULL UNIQUE,
+	"option_label" text NOT NULL,
+	"order_index" integer NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "onboarding_options_question_id_option_value_key" UNIQUE("question_id","option_value")
+);
+CREATE TABLE "onboarding_questions" (
+	"id" text PRIMARY KEY,
+	"question_text" text NOT NULL,
+	"question_type" text NOT NULL,
+	"order_index" integer NOT NULL,
+	"is_required" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "onboarding_questions_question_type_check" CHECK ((question_type = ANY (ARRAY['text'::text, 'select'::text, 'multiselect'::text])))
+);
+CREATE TABLE "onboarding_sessions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"user_id" uuid NOT NULL,
+	"onboarding_id" text NOT NULL,
+	"current_step" integer DEFAULT 0 NOT NULL,
+	"total_steps" integer NOT NULL,
+	"status" text DEFAULT 'started' NOT NULL,
+	"started_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"completed_at" timestamp with time zone,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "onboarding_sessions_status_check" CHECK ((status = ANY (ARRAY['started'::text, 'in_progress'::text, 'completed'::text, 'cancelled'::text])))
+);
+CREATE TABLE "sources" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"source_type" text NOT NULL,
+	"status" text DEFAULT 'active' NOT NULL,
+	"connection_details" jsonb,
+	"last_synced_at" timestamp with time zone,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "sources_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'inactive'::text, 'error'::text])))
+);
+CREATE TABLE "system_config" (
+	"key" text PRIMARY KEY,
+	"value" text NOT NULL,
+	"description" text,
+	"is_secret" boolean DEFAULT false,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"email" text NOT NULL CONSTRAINT "users_email_key" UNIQUE,
+	"password_hash" text,
+	"first_name" text,
+	"last_name" text,
+	"phone_number" text,
+	"auth_provider" text DEFAULT 'email' NOT NULL,
+	"is_new_user" boolean DEFAULT true NOT NULL,
+	"profile_complete" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"last_login" timestamp with time zone,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "voice_defaults" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"default_interaction_tone" text DEFAULT 'semi-formal' NOT NULL,
+	"default_voice_model" text DEFAULT 'arjun' NOT NULL,
+	"default_speaking_rate" numeric(3, 2) DEFAULT '1.0' NOT NULL,
+	"default_language_code" text DEFAULT 'en' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE "voice_settings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"business_profile_id" uuid NOT NULL CONSTRAINT "voice_settings_business_profile_id_key" UNIQUE,
+	"interaction_tone" text DEFAULT 'semi-formal',
+	"voice_model" text DEFAULT 'arjun',
+	"speaking_rate" numeric(3, 2) DEFAULT '1.0',
+	"language_code" text DEFAULT 'en',
+	"voice_gender" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE UNIQUE INDEX "agent_defaults_pkey" ON "agent_defaults" ("id");
+CREATE UNIQUE INDEX "agent_identity_business_profile_id_key" ON "agent_identity" ("business_profile_id");
+CREATE UNIQUE INDEX "agent_identity_pkey" ON "agent_identity" ("id");
+CREATE INDEX "idx_agent_identity_business_profile_id" ON "agent_identity" ("business_profile_id");
+CREATE UNIQUE INDEX "agent_runtime_settings_business_profile_id_key" ON "agent_runtime_settings" ("business_profile_id");
+CREATE UNIQUE INDEX "agent_runtime_settings_pkey" ON "agent_runtime_settings" ("id");
+CREATE INDEX "idx_agent_runtime_settings_business_profile_id" ON "agent_runtime_settings" ("business_profile_id");
+CREATE UNIQUE INDEX "auth_tokens_access_token_key" ON "auth_tokens" ("access_token");
+CREATE UNIQUE INDEX "auth_tokens_pkey" ON "auth_tokens" ("id");
+CREATE UNIQUE INDEX "auth_tokens_refresh_token_key" ON "auth_tokens" ("refresh_token");
+CREATE INDEX "idx_auth_tokens_access_token" ON "auth_tokens" ("access_token");
+CREATE INDEX "idx_auth_tokens_user_id" ON "auth_tokens" ("user_id");
+CREATE UNIQUE INDEX "brand_voices_label_key" ON "brand_voices" ("label");
+CREATE UNIQUE INDEX "brand_voices_pkey" ON "brand_voices" ("id");
+CREATE INDEX "idx_brand_voices_label" ON "brand_voices" ("label");
+CREATE UNIQUE INDEX "business_profiles_pkey" ON "business_profiles" ("id");
+CREATE INDEX "idx_business_profiles_industry" ON "business_profiles" ("industry");
+CREATE UNIQUE INDEX "idx_business_profiles_user_active" ON "business_profiles" ("user_id");
+CREATE INDEX "idx_business_profiles_user_created" ON "business_profiles" ("user_id","created_at");
+CREATE INDEX "idx_business_profiles_user_id" ON "business_profiles" ("user_id");
+CREATE UNIQUE INDEX "chat_messages_pkey" ON "chat_messages" ("id");
+CREATE INDEX "idx_chat_messages_created_at" ON "chat_messages" ("created_at");
+CREATE INDEX "idx_chat_messages_role" ON "chat_messages" ("role");
+CREATE INDEX "idx_chat_messages_session_id" ON "chat_messages" ("session_id");
+CREATE INDEX "idx_chat_messages_session_timestamp" ON "chat_messages" ("session_id","created_at");
+CREATE UNIQUE INDEX "chat_sessions_pkey" ON "chat_sessions" ("id");
+CREATE INDEX "idx_chat_sessions_business_created" ON "chat_sessions" ("business_profile_id","created_at");
+CREATE INDEX "idx_chat_sessions_business_profile_id" ON "chat_sessions" ("business_profile_id");
+CREATE INDEX "idx_chat_sessions_created_at" ON "chat_sessions" ("created_at");
+CREATE INDEX "idx_chat_sessions_status" ON "chat_sessions" ("status");
+CREATE UNIQUE INDEX "contact_messages_pkey" ON "contact_messages" ("id");
+CREATE INDEX "idx_contact_messages_created_at" ON "contact_messages" ("created_at");
+CREATE INDEX "idx_contact_messages_email" ON "contact_messages" ("email");
+CREATE INDEX "idx_contact_messages_status" ON "contact_messages" ("status");
+CREATE UNIQUE INDEX "customize_options_business_profile_id_key" ON "customize_options" ("business_profile_id");
+CREATE UNIQUE INDEX "customize_options_pkey" ON "customize_options" ("id");
+CREATE INDEX "idx_customize_options_business_profile_id" ON "customize_options" ("business_profile_id");
+CREATE UNIQUE INDEX "guardrails_defaults_pkey" ON "guardrails_defaults" ("id");
+CREATE UNIQUE INDEX "guardrails_settings_business_profile_id_key" ON "guardrails_settings" ("business_profile_id");
+CREATE UNIQUE INDEX "guardrails_settings_pkey" ON "guardrails_settings" ("id");
+CREATE INDEX "idx_guardrails_settings_business_profile_id" ON "guardrails_settings" ("business_profile_id");
+CREATE INDEX "idx_industries_label" ON "industries" ("label");
+CREATE UNIQUE INDEX "industries_label_key" ON "industries" ("label");
+CREATE UNIQUE INDEX "industries_pkey" ON "industries" ("id");
+CREATE INDEX "idx_knowledge_upload_files_status" ON "knowledge_upload_files" ("status");
+CREATE INDEX "idx_knowledge_upload_files_upload_id" ON "knowledge_upload_files" ("knowledge_upload_id");
+CREATE UNIQUE INDEX "knowledge_upload_files_pkey" ON "knowledge_upload_files" ("id");
+CREATE INDEX "idx_knowledge_uploads_business_profile_id" ON "knowledge_uploads" ("business_profile_id");
+CREATE INDEX "idx_knowledge_uploads_business_updated" ON "knowledge_uploads" ("business_profile_id","updated_at");
+CREATE INDEX "idx_knowledge_uploads_status" ON "knowledge_uploads" ("status");
+CREATE UNIQUE INDEX "knowledge_uploads_pkey" ON "knowledge_uploads" ("id");
+CREATE UNIQUE INDEX "knowledge_uploads_upload_id_key" ON "knowledge_uploads" ("upload_id");
+CREATE INDEX "idx_onboarding_answers_session_id" ON "onboarding_answers" ("onboarding_session_id");
+CREATE UNIQUE INDEX "onboarding_answers_onboarding_session_id_question_id_key" ON "onboarding_answers" ("onboarding_session_id","question_id");
+CREATE UNIQUE INDEX "onboarding_answers_pkey" ON "onboarding_answers" ("id");
+CREATE INDEX "idx_onboarding_options_order" ON "onboarding_options" ("question_id","order_index");
+CREATE INDEX "idx_onboarding_options_question" ON "onboarding_options" ("question_id");
+CREATE UNIQUE INDEX "onboarding_options_pkey" ON "onboarding_options" ("id");
+CREATE UNIQUE INDEX "onboarding_options_question_id_option_value_key" ON "onboarding_options" ("question_id","option_value");
+CREATE INDEX "idx_onboarding_questions_order" ON "onboarding_questions" ("order_index");
+CREATE UNIQUE INDEX "onboarding_questions_pkey" ON "onboarding_questions" ("id");
+CREATE INDEX "idx_onboarding_sessions_status" ON "onboarding_sessions" ("status");
+CREATE INDEX "idx_onboarding_sessions_user_id" ON "onboarding_sessions" ("user_id");
+CREATE UNIQUE INDEX "onboarding_sessions_pkey" ON "onboarding_sessions" ("id");
+CREATE INDEX "idx_sources_business_profile_id" ON "sources" ("business_profile_id");
+CREATE INDEX "idx_sources_status" ON "sources" ("status");
+CREATE UNIQUE INDEX "sources_pkey" ON "sources" ("id");
+CREATE INDEX "idx_system_config_key" ON "system_config" ("key");
+CREATE UNIQUE INDEX "system_config_pkey" ON "system_config" ("key");
+CREATE INDEX "idx_users_auth_provider" ON "users" ("auth_provider");
+CREATE INDEX "idx_users_email" ON "users" ("email");
+CREATE UNIQUE INDEX "users_email_key" ON "users" ("email");
+CREATE UNIQUE INDEX "users_pkey" ON "users" ("id");
+CREATE UNIQUE INDEX "voice_defaults_pkey" ON "voice_defaults" ("id");
+CREATE INDEX "idx_voice_settings_business_profile_id" ON "voice_settings" ("business_profile_id");
+CREATE UNIQUE INDEX "voice_settings_business_profile_id_key" ON "voice_settings" ("business_profile_id");
+CREATE UNIQUE INDEX "voice_settings_pkey" ON "voice_settings" ("id");
+ALTER TABLE "agent_identity" ADD CONSTRAINT "agent_identity_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;
+ALTER TABLE "agent_runtime_settings" ADD CONSTRAINT "agent_runtime_settings_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;
+ALTER TABLE "auth_tokens" ADD CONSTRAINT "auth_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+ALTER TABLE "business_profiles" ADD CONSTRAINT "business_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "chat_sessions"("id") ON DELETE CASCADE;
+ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;
+ALTER TABLE "customize_options" ADD CONSTRAINT "customize_options_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;
+ALTER TABLE "guardrails_settings" ADD CONSTRAINT "guardrails_settings_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;
+ALTER TABLE "knowledge_upload_files" ADD CONSTRAINT "knowledge_upload_files_knowledge_upload_id_fkey" FOREIGN KEY ("knowledge_upload_id") REFERENCES "knowledge_uploads"("id") ON DELETE CASCADE;
+ALTER TABLE "knowledge_uploads" ADD CONSTRAINT "knowledge_uploads_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;
+ALTER TABLE "onboarding_answers" ADD CONSTRAINT "onboarding_answers_onboarding_session_id_fkey" FOREIGN KEY ("onboarding_session_id") REFERENCES "onboarding_sessions"("id") ON DELETE CASCADE;
+ALTER TABLE "onboarding_options" ADD CONSTRAINT "onboarding_options_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "onboarding_questions"("id") ON DELETE CASCADE;
+ALTER TABLE "onboarding_sessions" ADD CONSTRAINT "onboarding_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+ALTER TABLE "sources" ADD CONSTRAINT "sources_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;
+ALTER TABLE "voice_settings" ADD CONSTRAINT "voice_settings_business_profile_id_fkey" FOREIGN KEY ("business_profile_id") REFERENCES "business_profiles"("id") ON DELETE CASCADE;

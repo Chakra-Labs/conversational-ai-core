@@ -16,12 +16,13 @@ from livekit.plugins.google.realtime import realtime_api as google_realtime_api
 from google.genai import types as genai_types
 
 from app.assistant import Assistant
+from app.database import db
 from app.instructions import get_entrypoint_instructions
 from app.session_manager import SessionManager, TranscriptLogger
 from app.user_context import get_user_details_from_metadata
 from monitoring.metrics import setup_metrics_callbacks
 
-agent_name = "conversational-ai-platform"
+agent_name = "conversational-ai"
 
 load_dotenv(".env.local")
 
@@ -134,8 +135,26 @@ async def govimithuru_agent(ctx: agents.JobContext):
 
     logger.info("Initializing agent for user %s with language: %s, mode: %s", user_phone, language, mode)
 
+    await db.ensure_initialized()
+    
+    custom_instructions = None
+    user_id = user_details.get("user_id") if user_details else None
+    is_onboarding = user_details.get("is_onboarding") if user_details else False
+    profile = None
+
+    if user_id and not is_onboarding:
+        profile = await db.get_business_profile(user_id)
+        if profile:
+            parts = []
+            if profile.get("system_prompt"):
+                parts.append(f"System Prompt: {profile['system_prompt']}")
+            if profile.get("persona_description"):
+                parts.append(f"Persona: {profile['persona_description']}")
+            if parts:
+                custom_instructions = "\n".join(parts)
+
     # Instantiate Assistant with user context (used for turn guidance tools)
-    assistant = Assistant(language=language, user_context=user_details)
+    assistant = Assistant(language=language, user_context=user_details, custom_instructions=custom_instructions)
 
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
@@ -280,7 +299,12 @@ async def govimithuru_agent(ctx: agents.JobContext):
 
         background_tasks.append(asyncio.create_task(_monitor_realtime_session()))
 
-        await session.generate_reply(instructions=get_entrypoint_instructions(language))
+        greeting_instructions = get_entrypoint_instructions(language)
+        if profile:
+            biz_name = profile.get('business_name', 'the business')
+            greeting_instructions += f"\nNote: You are representing {biz_name}. End of instructions."
+        
+        await session.generate_reply(instructions=greeting_instructions)
         await ctx.connect()
     finally:
         for task in background_tasks:

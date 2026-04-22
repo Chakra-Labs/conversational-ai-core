@@ -12,6 +12,7 @@ dependencies = [
     "livekit~=1.1.3",
     "livekit-agents[google,images,silero,turn-detector]~=1.5.1",
     "livekit-plugins-noise-cancellation~=0.2.5",
+    "asyncpg",
     "python-dotenv",
 ]
 
