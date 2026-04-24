@@ -27,9 +27,7 @@ agent_name = "conversational-ai"
 load_dotenv(".env.local")
 
 logger = logging.getLogger("agent")
-
 server = AgentServer()
-
 
 def _is_gemini_31_live_model(model_name: str | None) -> bool:
     if not model_name:
@@ -153,8 +151,13 @@ async def govimithuru_agent(ctx: agents.JobContext):
             if parts:
                 custom_instructions = "\n".join(parts)
 
-    # Instantiate Assistant with user context (used for turn guidance tools)
-    assistant = Assistant(language=language, user_context=user_details, custom_instructions=custom_instructions)
+    # Instantiate Assistant with user context
+    assistant = Assistant(
+        language=language, 
+        user_context=user_details, 
+        custom_instructions=custom_instructions,
+        is_onboarding=is_onboarding
+    )
 
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
@@ -299,10 +302,14 @@ async def govimithuru_agent(ctx: agents.JobContext):
 
         background_tasks.append(asyncio.create_task(_monitor_realtime_session()))
 
-        greeting_instructions = get_entrypoint_instructions(language)
-        if profile:
-            biz_name = profile.get('business_name', 'the business')
-            greeting_instructions += f"\nNote: You are representing {biz_name}. End of instructions."
+        if is_onboarding:
+            from app.onboarding_instructions import get_onboarding_greeting_instructions
+            greeting_instructions = get_onboarding_greeting_instructions()
+        else:
+            greeting_instructions = get_entrypoint_instructions(language)
+            if profile:
+                biz_name = profile.get('business_name', 'the business')
+                greeting_instructions += f"\nNote: You are representing {biz_name}. End of instructions."
         
         await session.generate_reply(instructions=greeting_instructions)
         await ctx.connect()
