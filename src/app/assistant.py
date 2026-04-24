@@ -34,7 +34,7 @@ class Assistant(Agent):
         
         if is_onboarding:
             # Onboarding mode: Use onboarding specific instructions and tools
-            instructions = get_onboarding_assistant_instructions()
+            instructions = get_onboarding_assistant_instructions(self.language)
             routing_tools = [
                 create_get_next_onboarding_question_tool(self.shared_state, user_context),
                 create_onboarding_save_answer_tool(self.shared_state, user_context),

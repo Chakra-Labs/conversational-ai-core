@@ -122,7 +122,7 @@ async def govimithuru_agent(ctx: agents.JobContext):
     }
 
     user_details = get_user_details_from_metadata(ctx)
-    language = (user_details.get("language") if user_details else "sinhala").lower()
+    language = (user_details.get("language") if user_details else "english").lower()
     user_phone = user_details.get("phone") if user_details else "unknown"
     mode = (user_details.get("mode") if user_details else "voice").lower()
 
@@ -304,7 +304,7 @@ async def govimithuru_agent(ctx: agents.JobContext):
 
         if is_onboarding:
             from app.onboarding_instructions import get_onboarding_greeting_instructions
-            greeting_instructions = get_onboarding_greeting_instructions()
+            greeting_instructions = get_onboarding_greeting_instructions(language)
         else:
             greeting_instructions = get_entrypoint_instructions(language)
             if profile:

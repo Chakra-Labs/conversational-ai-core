@@ -14,11 +14,22 @@ def _load_onboarding_instructions() -> Dict[str, Any]:
         return json.load(f)
 
 
-def get_onboarding_assistant_instructions() -> str:
-    data = _load_onboarding_instructions()
-    return data.get("prompts", {}).get("assistant", "")
+def _language_key(language: str) -> str:
+    return (language or 'english').strip().lower()
 
 
-def get_onboarding_greeting_instructions() -> str:
-    data = _load_onboarding_instructions()
-    return data.get("prompts", {}).get("greeting", "")
+def get_onboarding_instruction_bundle(language: str) -> Dict[str, Any]:
+    root_data = _load_onboarding_instructions()
+    languages_data = root_data.get("languages", {})
+    key = _language_key(language)
+    return languages_data.get(key) or 'english'
+
+
+def get_onboarding_assistant_instructions(language: str) -> str:
+    bundle = get_onboarding_instruction_bundle(language)
+    return bundle.get("prompts", {}).get("assistant", "")
+
+
+def get_onboarding_greeting_instructions(language: str) -> str:
+    bundle = get_onboarding_instruction_bundle(language)
+    return bundle.get("prompts", {}).get("greeting", "")
