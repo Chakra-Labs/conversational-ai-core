@@ -182,27 +182,27 @@ async def govimithuru_agent(ctx: agents.JobContext):
             voice="Leda",
             temperature=0.4,  # Low temperature for fastest response
             modalities=[genai_types.Modality.AUDIO],
-            thinking_config=genai_types.ThinkingConfig(
-                thinking_budget=0,
-                include_thoughts=False,
-            ),
-            realtime_input_config=genai_types.RealtimeInputConfig(
-                automatic_activity_detection=genai_types.AutomaticActivityDetection(
-                    disabled=False,
-                    start_of_speech_sensitivity=genai_types.StartSensitivity.START_SENSITIVITY_HIGH,
-                    end_of_speech_sensitivity=genai_types.EndSensitivity.END_SENSITIVITY_HIGH,
-                    prefix_padding_ms=20,
-                    silence_duration_ms=120,
-                )
-            ),
-            context_window_compression=genai_types.ContextWindowCompressionConfig(
-                trigger_tokens=2000,
-                sliding_window=genai_types.SlidingWindow(target_tokens=1000),
-            ),
-            session_resumption=genai_types.SessionResumptionConfig(
-                handle=session_manager.get_resumption_handle(),
-                transparent=True,
-            ),
+            # thinking_config=genai_types.ThinkingConfig(
+            #     thinking_budget=0,
+            #     include_thoughts=False,
+            # ),
+            # realtime_input_config=genai_types.RealtimeInputConfig(
+            #     automatic_activity_detection=genai_types.AutomaticActivityDetection(
+            #         disabled=False,
+            #         start_of_speech_sensitivity=genai_types.StartSensitivity.START_SENSITIVITY_HIGH,
+            #         end_of_speech_sensitivity=genai_types.EndSensitivity.END_SENSITIVITY_HIGH,
+            #         prefix_padding_ms=20,
+            #         silence_duration_ms=120,
+            #     )
+            # ),
+            # context_window_compression=genai_types.ContextWindowCompressionConfig(
+            #     trigger_tokens=2000,
+            #     sliding_window=genai_types.SlidingWindow(target_tokens=1000),
+            # ),
+            # session_resumption=genai_types.SessionResumptionConfig(
+            #     handle=session_manager.get_resumption_handle(),
+            #     transparent=True,
+            # ),
         )
 
     session = AgentSession(
