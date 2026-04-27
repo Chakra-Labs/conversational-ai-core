@@ -305,6 +305,24 @@ async def govimithuru_agent(ctx: agents.JobContext):
         if is_onboarding:
             from app.onboarding_instructions import get_onboarding_greeting_instructions
             greeting_instructions = get_onboarding_greeting_instructions(language)
+            
+            # Fetch the first question directly to prevent audio overlapping/interruption 
+            # caused by a mid-greeting tool call.
+            if user_id:
+                db_session = await db.get_onboarding_session(user_id)
+                if db_session:
+                    questions = await db.get_onboarding_questions()
+                    answers = await db.get_onboarding_answers(str(db_session["id"]))
+                    next_q = next((q for q in questions if q["id"] not in answers), None)
+                    if next_q:
+                        greeting_instructions += (
+                            f"\n\nFIRST QUESTION TO ASK: {next_q['question_text']}\n"
+                            f"QUESTION_ID: {next_q['id']}\n"
+                            f"QUESTION_TYPE: {next_q['question_type']}\n"
+                            "INSTRUCTION: Greet the user warmly, explain the profile setup, and then ask the FIRST QUESTION TO ASK immediately. "
+                            "Do NOT call `get_next_onboarding_question` now. Just ask the question. "
+                            "When the user answers, call `save_onboarding_answer` with the QUESTION_ID provided above."
+                        )
         else:
             greeting_instructions = get_entrypoint_instructions(language)
             if profile:

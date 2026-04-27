@@ -114,6 +114,9 @@ def create_get_next_onboarding_question_tool(
 
         lines.append(
             "INSTRUCTION: Ask the user exactly this question now. "
+            "IMPORTANT: Do NOT read out the allowed options one by one. Only ask the question text. "
+            "Classify the user's response into one of the allowed_options values (or multiple if multiselect). "
+            "If the user's answer is unclear, ask for clarification or mention the options then. "
             "After the user answers, call `save_onboarding_answer` with the question_id above and the parsed answer."
         )
 
