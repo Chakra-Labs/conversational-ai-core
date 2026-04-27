@@ -22,7 +22,7 @@ from app.session_manager import SessionManager, TranscriptLogger
 from app.user_context import get_user_details_from_metadata
 from monitoring.metrics import setup_metrics_callbacks
 
-agent_name = "conversational-ai"
+agent_name = "conv-ai-platform-agent"
 
 load_dotenv(".env.local")
 

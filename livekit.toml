@@ -1,6 +1,6 @@
 [project]
-  subdomain = "conversational-ai-platform-pkkpeczm"
+  subdomain = "conv-ai-platform-dr6okju3"
 
 [agent]
-  id = "CA_rRPcymaYB7Tg"
-  name = "conversational-ai-platform"
+  id = "CA_wmwF4mbchqzh"
+  name = "conv-ai-platform-agent"
